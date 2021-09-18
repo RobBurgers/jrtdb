@@ -10,7 +10,29 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Override these site specific properties in settings.xml -->
+        <deployFullReleaseId>myReleaseRepo</deployFullReleaseId>
+        <deployFullReleaseName>My Maven Release Repository</deployFullReleaseName>
+        <deployFullReleaseUrl>file://${basedir}/FullReleaseRepo</deployFullReleaseUrl>
+        <deploySnapshotId>mySnapshotRepo</deploySnapshotId>
+        <deploySnapshotName>My Maven Snapshot Repository</deploySnapshotName>
+        <deploySnapshotUrl>file://${basedir}/SnapshotRepo</deploySnapshotUrl>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>${deployFullReleaseId}</id>
+            <name>${deployFullReleaseName}</name>
+            <url>${deployFullReleaseUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <uniqueVersion>false</uniqueVersion>
+            <id>${deploySnapshotId}</id>
+            <name>${deploySnapshotName}</name>
+            <url>${deploySnapshotUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <modules>
         <module>jrtdb-core</module>
