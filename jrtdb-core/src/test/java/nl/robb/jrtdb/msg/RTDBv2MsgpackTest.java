@@ -3,7 +3,6 @@ package nl.robb.jrtdb.msg;
 import nl.robb.jrtdb.common.InvalidDataException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,7 +15,8 @@ public class RTDBv2MsgpackTest {
     
     @Test
     public void testParseData() throws InvalidDataException, IOException {
-        Collection<RTDBv2DTO> result = parseFile("src/test/resources/rtdb-01.bin");
+        RTDBv2DSFile ds = new RTDBv2DSFile("src/test/resources/rtdb-01.bin");
+        Collection<RTDBv2DTO> result = ds.getAll();
         Assert.assertEquals(17, result.size());
     }
     
@@ -24,7 +24,8 @@ public class RTDBv2MsgpackTest {
     public void testParseDataAll() throws InvalidDataException, IOException {
         for (int i = 0; i < 10; i++) {
             String fileName = String.format("src/test/resources/rtdb-%02d.bin", i);
-            Collection<RTDBv2DTO> result = parseFile(fileName);
+            RTDBv2DSFile ds = new RTDBv2DSFile(fileName);
+            Collection<RTDBv2DTO> result = ds.getAll();
             System.out.printf("%s: %s%n", fileName, result);
         }
     }
@@ -36,16 +37,6 @@ public class RTDBv2MsgpackTest {
         byte[] output = mp.pack(mp.unpack(input));
         
         Assert.assertArrayEquals(input, output);
-    }
-    
-    private Collection<RTDBv2DTO> parseFile(String fileName) {
-        try {
-            return new RTDBv2Msgpack().unpack(readFile(fileName));
-        }
-        catch (IOException | InvalidDataException ioe) {
-            Assert.fail(ioe.getMessage());
-        }
-        return new ArrayList<>();
     }
     
     private byte[] readFile(String fileName) {
