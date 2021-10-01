@@ -39,11 +39,13 @@ public class RTDBv2Msgpack {
             // data
             packer.packRawStringHeader(d.getData().length);
             packer.writePayload(d.getData());
-            
+
             // timestamp
             packer.packArrayHeader(2);
-            packer.packInt(d.getTimestamp().getTvSec());
-            packer.packInt(d.getTimestamp().getTvUSec());
+            int tvSec = (int)d.getInstant().getEpochSecond();
+            int tvUSec = (int)(d.getInstant().getNano()/1000);
+            packer.packInt(tvSec);
+            packer.packInt(tvUSec);
             
             // isShared
             packer.packBoolean(d.isShared());
