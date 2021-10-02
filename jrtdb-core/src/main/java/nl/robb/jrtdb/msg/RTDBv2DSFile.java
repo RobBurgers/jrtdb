@@ -8,7 +8,7 @@ import nl.robb.jrtdb.common.InvalidDataException;
 import nl.robb.jrtdb.common.RTDBDataSource;
 
 /**
- * Data store that support file storage.
+ * Data store that supports file storage.
  * @author rob
  */
 public class RTDBv2DSFile implements RTDBDataSource<RTDBv2DTO> {
