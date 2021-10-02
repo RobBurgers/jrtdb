@@ -1,5 +1,7 @@
 package nl.robb.jrtdb.comm;
 
+import java.util.Arrays;
+
 /**
  *
  * @author rob
@@ -50,7 +52,15 @@ public class RTDBContext {
             this.ifName = ifName;
             return this;
         }
-        
+
+        public Builder withIPv4Address(byte[] ipv4Address) {
+            if (ipv4Address == null || ipv4Address.length != 4) {
+                throw new IllegalArgumentException("Invalid address: " + Arrays.toString(ipv4Address));
+            }
+            System.arraycopy(ipv4Address, 0, this.ipv4Address, 0, 4);
+            return this;
+        }
+
         public Builder withIPv4Address(String ipv4Address) {
             if (ipv4Address == null) {
                 throw new IllegalArgumentException("Invalid address: " + ipv4Address);
