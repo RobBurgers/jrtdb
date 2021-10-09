@@ -105,7 +105,7 @@ public class RTDBv2DTO {
             return this;
         }
 
-        RTDBv2DTO build() {
+        public RTDBv2DTO build() {
             return new RTDBv2DTO(agent, key, data,
                 timestamp, isShared, isList);
         }

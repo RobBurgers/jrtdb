@@ -72,6 +72,11 @@
                 <artifactId>zstd-jni</artifactId>
                 <version>1.5.0-4</version>
             </dependency>
+            <dependency>
+                <groupId>org.lmdbjava</groupId>
+                <artifactId>lmdbjava</artifactId>
+                <version>0.8.2</version>
+            </dependency>
 
             <dependency>
                 <groupId>junit</groupId>
