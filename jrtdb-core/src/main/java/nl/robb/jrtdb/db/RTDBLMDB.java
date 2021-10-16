@@ -8,9 +8,13 @@ import static org.lmdbjava.Env.create;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
+import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
@@ -45,7 +49,7 @@ class RTDBLMDB {
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
-                .open(path, EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
+                .open(path, EnvFlags.MDB_RDONLY_ENV, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
 
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
@@ -74,26 +78,69 @@ class RTDBLMDB {
             byte[] dbdata = new byte[fetchedVal.remaining()];
             fetchedVal.get(dbdata);
 
-// Preferred solution however decoding byte array does not give the expected result
-//            ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-//            objectMapper.setAnnotationIntrospector(new JsonArrayFormat());
-//            item = objectMapper.readValue(dbdata, RTDBItem.class);
-
-            MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(dbdata, 0, dbdata.length);
-            Value v = unpacker.unpackValue();
-            ArrayValue av = v.asArrayValue();
-
-            byte[] data = av.get(0).asStringValue().asByteArray();
-            ArrayValue tsav = av.get(1).asArrayValue();
-            RTDBTimestamp timestamp = new RTDBTimestamp(
-                tsav.get(0).asIntegerValue().asInt(), tsav.get(1).asIntegerValue().asInt());
-            boolean isShared = av.get(2).asBooleanValue().getBoolean();
-            boolean isList = av.get(3).asBooleanValue().getBoolean();
-
-            item = new RTDBItem(data, timestamp, isShared, isList);
+            item = toRTDBItem(dbdata);
         }
         env.close();
 
         return item;
     }
+
+    public Map<String, RTDBItem> getAll() throws IOException {
+        // We always need an Env. An Env owns a physical on-disk storage file. One
+        // Env can store many different databases (ie sorted maps).
+        final Env<ByteBuffer> env = create()
+                // LMDB also needs to know how large our DB might be. Over-estimating is OK.
+                .setMapSize(100 * 1024 * 1024)
+                // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
+                .setMaxDbs(1)
+                // Now let's open the Env. The same path can be concurrently opened and
+                // used in different processes, but do not open the same path twice in
+                // the same process at the same time.
+                .open(path, EnvFlags.MDB_RDONLY_ENV, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
+
+        // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
+        // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
+        final Dbi<ByteBuffer> db = env.openDbi((String)null, MDB_CREATE);
+
+        HashMap<String, RTDBItem> result = new HashMap<>();
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            // Each iterable uses a cursor and must be closed when finished. Iterate
+            // forward in terms of key ordering starting with the first key.
+            try (CursorIterable<ByteBuffer> ci = db.iterate(txn, KeyRange.all())) {
+                for (final CursorIterable.KeyVal<ByteBuffer> kv : ci) {
+                    String key = UTF_8.decode(kv.key()).toString();
+
+                    // The fetchedVal is read-only and points to LMDB memory
+                    final ByteBuffer fetchedVal = kv.val();
+                    byte[] dbdata = new byte[fetchedVal.remaining()];
+                    fetchedVal.get(dbdata);
+
+                    result.put(key, toRTDBItem(dbdata));
+                }
+            }
+        }
+        env.close();
+
+        return result;
+    }
+
+    private RTDBItem toRTDBItem(byte[] dbdata) throws IOException {
+// Preferred solution however decoding byte array does not give the expected result
+//            ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+//            objectMapper.setAnnotationIntrospector(new JsonArrayFormat());
+//            item = objectMapper.readValue(dbdata, RTDBItem.class);
+
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(dbdata, 0, dbdata.length);
+        Value v = unpacker.unpackValue();
+        ArrayValue av = v.asArrayValue();
+
+        byte[] data = av.get(0).asStringValue().asByteArray();
+        ArrayValue tsav = av.get(1).asArrayValue();
+        RTDBTimestamp timestamp = new RTDBTimestamp(
+            tsav.get(0).asIntegerValue().asInt(), tsav.get(1).asIntegerValue().asInt());
+        boolean isShared = av.get(2).asBooleanValue().getBoolean();
+        boolean isList = av.get(3).asBooleanValue().getBoolean();
+        return new RTDBItem(data, timestamp, isShared, isList);
+    }
 }
+
