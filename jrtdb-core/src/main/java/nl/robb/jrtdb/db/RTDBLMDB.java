@@ -16,6 +16,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
+import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ArrayValue;
@@ -25,23 +26,19 @@ import org.msgpack.value.Value;
  *
  * @author rob
  */
-class RTDBLMDB {
+class RTDBLMDB implements AutoCloseable {
 
-    private final File path;
+    private final Env<ByteBuffer> env;
+    private final Dbi<ByteBuffer> db;
 
     public RTDBLMDB(File path) {
         // We need a storage directory first.
         // The path cannot be on a remote file system.
-        this.path = path;
-    }
-
-    public RTDBItem get(String key) throws IOException {
-        // TODO: Check if path exists
-        path.mkdirs();
+        path.mkdirs(); // TODO: Check if path exists
 
         // We always need an Env. An Env owns a physical on-disk storage file. One
         // Env can store many different databases (ie sorted maps).
-        final Env<ByteBuffer> env = create()
+        env = create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
                 .setMapSize(100 * 1024 * 1024)
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
@@ -49,12 +46,19 @@ class RTDBLMDB {
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
-                .open(path, EnvFlags.MDB_RDONLY_ENV, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
+                .open(path, EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
 
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
-        final Dbi<ByteBuffer> db = env.openDbi((String)null, MDB_CREATE);
+        db = env.openDbi((String)null, MDB_CREATE);
+    }
 
+    @Override
+    public void close() {
+        env.close();
+    }
+
+    public RTDBItem get(String key) throws IOException {
         // We want to store some data, so we will need a direct ByteBuffer.
         // Note that LMDB keys cannot exceed maxKeySize bytes (511 bytes by default).
         // Values can be larger.
@@ -80,28 +84,10 @@ class RTDBLMDB {
 
             item = toRTDBItem(dbdata);
         }
-        env.close();
-
         return item;
     }
 
     public Map<String, RTDBItem> getAll() throws IOException {
-        // We always need an Env. An Env owns a physical on-disk storage file. One
-        // Env can store many different databases (ie sorted maps).
-        final Env<ByteBuffer> env = create()
-                // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(100 * 1024 * 1024)
-                // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
-                .setMaxDbs(1)
-                // Now let's open the Env. The same path can be concurrently opened and
-                // used in different processes, but do not open the same path twice in
-                // the same process at the same time.
-                .open(path, EnvFlags.MDB_RDONLY_ENV, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NOTLS);
-
-        // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
-        // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
-        final Dbi<ByteBuffer> db = env.openDbi((String)null, MDB_CREATE);
-
         HashMap<String, RTDBItem> result = new HashMap<>();
         try (Txn<ByteBuffer> txn = env.txnRead()) {
             // Each iterable uses a cursor and must be closed when finished. Iterate
@@ -119,9 +105,22 @@ class RTDBLMDB {
                 }
             }
         }
-        env.close();
-
         return result;
+    }
+
+    void put(String key, RTDBItem item) throws IOException {
+
+        final ByteBuffer dbkey = allocateDirect(env.getMaxKeySize());
+        final ByteBuffer dbval = allocateDirect(700);
+
+        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            dbkey.put(key.getBytes(UTF_8)).flip();
+            dbval.put(toByteArray(item)).flip();
+            db.put(txn, dbkey, dbval);
+
+            // An explicit commit is required, otherwise Txn.close() rolls it back.
+            txn.commit();
+        }
     }
 
     private RTDBItem toRTDBItem(byte[] dbdata) throws IOException {
@@ -129,6 +128,10 @@ class RTDBLMDB {
 //            ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 //            objectMapper.setAnnotationIntrospector(new JsonArrayFormat());
 //            item = objectMapper.readValue(dbdata, RTDBItem.class);
+
+        if (dbdata == null || dbdata.length == 0) {
+            return null;
+        }
 
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(dbdata, 0, dbdata.length);
         Value v = unpacker.unpackValue();
@@ -142,5 +145,25 @@ class RTDBLMDB {
         boolean isList = av.get(3).asBooleanValue().getBoolean();
         return new RTDBItem(data, timestamp, isShared, isList);
     }
-}
 
+    private byte[] toByteArray(RTDBItem item) throws IOException {
+        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        packer.packArrayHeader(4);
+
+        // data
+        packer.packRawStringHeader(item.getData().length);
+        packer.writePayload(item.getData());
+
+        // timestamp
+        packer.packArrayHeader(2);
+        packer.packInt(item.getTimestamp().getTvSec());
+        packer.packInt(item.getTimestamp().getTvUSec());
+
+        // isShared
+        packer.packBoolean(item.isShared());
+        // isList
+        packer.packBoolean(item.isList());
+
+        return packer.toByteArray();
+    }
+}

@@ -19,6 +19,11 @@ public class RTDBv2DSCollection implements RTDBDataSource<RTDBv2DTO> {
     }
 
     @Override
+    public void close() {
+        items.clear();
+    }
+
+    @Override
     public boolean isRead() {
         return true;
     }

@@ -2,6 +2,7 @@ package nl.robb.jrtdb.msg;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import nl.robb.jrtdb.common.HelperMsgpack;
 
 /**
  *
@@ -31,7 +32,7 @@ public class RTDBv2DTO {
     }
 
     /**
-     * @return the data
+     * @return the encoded data
      */
     public byte[] getData() {
         return data;
@@ -57,14 +58,21 @@ public class RTDBv2DTO {
     public boolean isList() {
         return isList;
     }
-    
+
+    /**
+     * @return the decoded data as string
+     */
+    public String getDataAsString() {
+        return HelperMsgpack.toString(HelperMsgpack.unpack(data, 0, data.length));
+    }
+
     @Override
     public String toString() {
         double t = (double)timestamp.getEpochSecond() + (double)timestamp.getNano() * 1e-9f;
-        return String.format("agent=%d; key=%s; data.length=%d; timestamp=%.6f; shared=%b; list=%b",
-                agent, key, data.length, t, isShared, isList);
+        return String.format("agent=%d; key=%s; data=%s; timestamp=%.6f; shared=%b; list=%b",
+                agent, key, getDataAsString(), t, isShared, isList);
     }
-    
+
     private RTDBv2DTO(int agent, String key, byte[] data, Instant timestamp,
             boolean isShared, boolean isList) {
         this.agent = agent;
@@ -76,7 +84,7 @@ public class RTDBv2DTO {
     }
 
     public static class RtDBv2DTOBuilder {
-        
+
         private final int agent;
         private final String key;
         private final byte[] data;
@@ -94,7 +102,7 @@ public class RTDBv2DTO {
             timestamp = Instant.EPOCH.plusSeconds(tv_sec).plus(tv_usec, ChronoUnit.MICROS);
             return this;
         }
-        
+
         public RtDBv2DTOBuilder isShared() {
             this.isShared = true;
             return this;

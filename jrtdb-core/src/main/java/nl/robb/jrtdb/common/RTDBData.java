@@ -38,15 +38,15 @@ public class RTDBData<T> {
 
     /**
      * Return age in millisecond
-     * @return 
+     * @return
      */
     public long getAge() {
         return ChronoUnit.MILLIS.between(ts, Instant.now());
     }
 
     /**
-     * 
-     * @return 
+     *
+     * @return
      */
     public RTDBStatus getStatus() {
         return status;

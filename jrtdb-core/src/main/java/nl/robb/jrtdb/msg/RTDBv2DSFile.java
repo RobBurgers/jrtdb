@@ -24,6 +24,10 @@ public class RTDBv2DSFile implements RTDBDataSource<RTDBv2DTO> {
     }
 
     @Override
+    public void close() {
+    }
+
+    @Override
     public boolean isRead() {
         return true;
     }

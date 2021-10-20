@@ -12,7 +12,7 @@ import nl.robb.jrtdb.msg.RTDBv2DTO;
  *
  * @author rob
  */
-public class RTDBStorage implements RTDBDataSource<RTDBv2DTO> {
+public class RTDBStorage implements RTDBDataSource<RTDBv2DTO>  {
 
     private static final String DB_ROOT_PATH = "/tmp/rtdb2_storage";
     private static final String DB_DEFAULT = "default";
@@ -32,6 +32,11 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO> {
         this.database = new RTDBLMDB(new File(
                 String.format("%s/%d/%s/agent%d", rootPath, agent, database, remoteAgent)));
         this.remoteAgent = remoteAgent;
+    }
+
+    @Override
+    public void close() {
+        database.close();
     }
 
     @Override
@@ -63,6 +68,11 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO> {
         return result;
     }
 
+    @Override
+    public void put(String key, RTDBv2DTO data) throws IOException {
+        database.put(key, toRTDBItem(data));
+    }
+
     private RTDBv2DTO toDTO(String key, RTDBItem item) {
         RTDBv2DTO.RtDBv2DTOBuilder builder = new RTDBv2DTO.RtDBv2DTOBuilder(remoteAgent, key, item.getData())
             .withTimestamp(item.getTimestamp().getTvSec(), item.getTimestamp().getTvUSec());
@@ -73,5 +83,10 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO> {
             builder = builder.isShared();
         }
         return builder.build();
+    }
+
+    private RTDBItem toRTDBItem(RTDBv2DTO data) {
+        RTDBTimestamp ts = new RTDBTimestamp(data.getInstant());
+        return new RTDBItem(data.getData(), ts, data.isShared(), data.isList());
     }
 }

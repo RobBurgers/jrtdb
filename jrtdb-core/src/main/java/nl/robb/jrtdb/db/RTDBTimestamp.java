@@ -1,6 +1,7 @@
 package nl.robb.jrtdb.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
 
 /**
  *
@@ -13,6 +14,10 @@ class RTDBTimestamp {
 
     public RTDBTimestamp(double ts) {
         this ((int)ts, (int)((ts - ((int)ts)) * 1e6));
+    }
+
+    public RTDBTimestamp(Instant ts) {
+        this ((int)ts.getEpochSecond(), (int)(ts.getNano()/1000));
     }
 
     public RTDBTimestamp(

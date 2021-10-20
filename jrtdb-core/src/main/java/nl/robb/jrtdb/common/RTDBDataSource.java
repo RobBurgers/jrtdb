@@ -1,5 +1,6 @@
 package nl.robb.jrtdb.common;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -8,7 +9,7 @@ import java.util.Collection;
  * @author rob
  * @param <T>
  */
-public interface RTDBDataSource<T> {
+public interface RTDBDataSource<T> extends Closeable {
 
     /**
      * Returns whether this data store supports reading of data
@@ -39,7 +40,7 @@ public interface RTDBDataSource<T> {
 
     /**
      * Store data in this data store.
-     * @param key key to which the data is to be assiociated
+     * @param key key to which the data is to be associated
      * @param data data to store
      * @throws java.io.IOException when data store is not accessible.
      */
