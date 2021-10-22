@@ -9,8 +9,12 @@ public final class TestSupport {
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 3];
-        for (int j = 0; j < bytes.length; j++) {
+        return bytesToHex(bytes, 0, bytes.length);
+    }
+
+    public static String bytesToHex(byte[] bytes, int offset, int length) {
+        char[] hexChars = new char[length * 3];
+        for (int j = offset; j < offset + length; j++) {
             int v = bytes[j] & 0xFF;
             hexChars[j * 3] = HEX_ARRAY[v >>> 4];
             hexChars[j * 3 + 1] = HEX_ARRAY[v & 0x0F];
