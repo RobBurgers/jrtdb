@@ -51,6 +51,11 @@ public class RTDBTest {
         public boolean isWrite() {
             return true;
         }
+
+        @Override
+        public void close() {
+            store.clear();
+        }
     }
 
     public static class DataItem {
@@ -108,7 +113,7 @@ public class RTDBTest {
     private <T> T getValue(RTDB rtdb, String key, Class<T> clazz) {
         RTDBData<T> t = rtdb.get(key, clazz);
         if (!t.isValid()) {
-            LOG.log(Level.WARNING, "Failed to retrieve data: key={0} status={1}", 
+            LOG.log(Level.WARNING, "Failed to retrieve data: key={0} status={1}",
                     new Object[] {key, t.getStatus()});
         }
         return t.get();
