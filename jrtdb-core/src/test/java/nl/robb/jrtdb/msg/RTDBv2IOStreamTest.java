@@ -20,24 +20,6 @@ import org.junit.Test;
 public class RTDBv2IOStreamTest {
 
     @Test
-    @Ignore("zstd compression format slightly differs")
-    public void testInputOutput() throws InvalidDataException, IOException {
-        byte[] dataIn = readFile("src/test/resources/rtdb-00.bin");
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        RTDBv2OutputStream ros = new RTDBv2OutputStream(1, bos);
-
-        RTDBv2InputStream ris = new RTDBv2InputStream(new ByteArrayInputStream(dataIn));
-
-        byte[] buffer = new byte[4096];
-        int count = ris.read(buffer);
-        ros.write(buffer, 0, count);
-        ros.flush();
-
-        byte[] dataOut = bos.toByteArray();
-        Assert.assertArrayEquals(TestSupport.bytesToHex(dataOut), dataIn, dataOut);
-    }
-
-    @Test
     public void testSendData() throws InvalidDataException, IOException {
         byte[] dataIn = readFile("src/test/resources/rtdb-00.bin");
         byte [] IP = { 127, 0, 0, 1 };
@@ -48,7 +30,7 @@ public class RTDBv2IOStreamTest {
     }
 
     @Test
-    public void testSendReceiveData() throws InvalidDataException, IOException {
+    public void testOutputInput() throws InvalidDataException, IOException {
         // read data from file
         byte[] dataIn = readFile("src/test/resources/rtdb-00.bin");
         RTDBv2InputStream ris = new RTDBv2InputStream(new ByteArrayInputStream(dataIn));

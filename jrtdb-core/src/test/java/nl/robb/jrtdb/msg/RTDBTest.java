@@ -96,7 +96,6 @@ public class RTDBTest {
         byte[] serialized = objectMapper.writeValueAsBytes(items);
         RTDBv2DTO dto = new RTDBv2DTO.RtDBv2DTOBuilder(1, "ITEMS", serialized)
                 .build();
-        System.out.println(TestSupport.bytesToHex(serialized));
 
         TestDataSource ds = new TestDataSource();
         ds.put("ITEMS", dto);
