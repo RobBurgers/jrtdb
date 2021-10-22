@@ -10,7 +10,7 @@ import java.io.InputStream;
  * @author rob
  */
 public class RTDBv2InputStream extends InputStream {
-    
+
     private final InputStream is;
     private final byte[] data = new byte[4096];
     private int remaining = 0;
@@ -27,13 +27,13 @@ public class RTDBv2InputStream extends InputStream {
             readMessage();
         }
         if (remaining > 0 ) {
-            remaining--;
             byte b = data[total - remaining];
+            remaining--;
             result = b > 0 ? b : 256 + b;
         }
         return result;
     }
-    
+
     private void readMessage() throws IOException {
         int size = is.read();
         if (size < 0) {
@@ -48,8 +48,7 @@ public class RTDBv2InputStream extends InputStream {
         byte[] compressed = new byte[4096];
         int compressedSize = is.read(compressed);
         total = (int) Zstd.decompressByteArray(data, 0, 4096, compressed, 0, compressedSize);
-        total--; // TODO: decompressed data contains one (yet unexplained) byte too many
-        
+
         remaining = total;
     }
 }

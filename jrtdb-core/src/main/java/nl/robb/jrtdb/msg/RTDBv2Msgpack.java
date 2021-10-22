@@ -18,16 +18,17 @@ import static nl.robb.jrtdb.common.HelperMsgpack.*;
  * @author rob
  */
 public class RTDBv2Msgpack {
-    
+
     private static final int IDX_KEY = 0;
     private static final int IDX_AGENT = 1;
     private static final int IDX_DATA = 2;
     private static final int IDX_TIMESTAMP = 3;
     private static final int IDX_SHARED = 4;
     private static final int IDX_LIST = 5;
-    
+
     public byte[] pack(Collection<RTDBv2DTO> collection) throws IOException {
         MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        packer.packArrayHeader(1);
         packer.packArrayHeader(collection.size());
         for (RTDBv2DTO d : collection) {
             packer.packArrayHeader(6);
@@ -35,7 +36,7 @@ public class RTDBv2Msgpack {
             packer.packString(d.getKey());
             // agent
             packer.packInt(d.getAgent());
-            
+
             // data
             packer.packRawStringHeader(d.getData().length);
             packer.writePayload(d.getData());
@@ -46,7 +47,7 @@ public class RTDBv2Msgpack {
             int tvUSec = (int)(d.getInstant().getNano()/1000);
             packer.packInt(tvSec);
             packer.packInt(tvUSec);
-            
+
             // isShared
             packer.packBoolean(d.isShared());
             // isList
@@ -54,7 +55,7 @@ public class RTDBv2Msgpack {
         }
         return packer.toByteArray();
     }
-    
+
     /**
      * Unpacks RTDBv2 msgpacked data to RTDBv2 DTO.
      * @param data msgpacked RTDBv2 data, byte array of uncompressed data
@@ -67,19 +68,20 @@ public class RTDBv2Msgpack {
     }
 
     public Collection<RTDBv2DTO> unpack(byte[] data, int offset, int length) throws InvalidDataException, IOException {
-        
+
         List<RTDBv2DTO> result = new ArrayList<>();
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(data, offset, length);
-        
+
         if (!unpacker.hasNext()) {
             return result;
         }
         Value v = unpacker.unpackValue();
-//        checkValueType(v, ValueType.ARRAY, 1);
-//        
-//        v = v.asArrayValue();
-        checkValueType(v, ValueType.ARRAY);
-        for (Value e : v.asArrayValue()) {
+        checkValueType(v, ValueType.ARRAY, 1);
+
+        Value w = v.asArrayValue().get(0);
+        checkValueType(w, ValueType.ARRAY);
+
+        for (Value e : w.asArrayValue()) {
             result.add(unpackDTO(e));
         }
 //        System.out.println("Data available? " + unpacker.hasNext());
@@ -92,9 +94,9 @@ public class RTDBv2Msgpack {
 
     private RTDBv2DTO unpackDTO(Value v) throws InvalidDataException {
         checkValueType(v, ValueType.ARRAY, 6);
-        
+
         ArrayValue av = v.asArrayValue();
-        checkValueTypes(av, 
+        checkValueTypes(av,
                 ValueType.STRING, // key
                 ValueType.INTEGER, // agent
                 ValueType.STRING, // custom data
@@ -102,7 +104,7 @@ public class RTDBv2Msgpack {
                 ValueType.BOOLEAN, // shared
                 ValueType.BOOLEAN // list
         );
-        
+
         RTDBv2DTO.RtDBv2DTOBuilder builder = new RTDBv2DTO.RtDBv2DTOBuilder(
                 av.get(IDX_AGENT).asIntegerValue().asInt(),
                 av.get(IDX_KEY).asStringValue().asString(),
@@ -116,7 +118,7 @@ public class RTDBv2Msgpack {
         ArrayValue tsav = av.get(IDX_TIMESTAMP).asArrayValue();
         checkValueTypes(tsav, ValueType.INTEGER, ValueType.INTEGER);
         builder = builder.withTimestamp(tsav.get(0).asIntegerValue().asInt(), tsav.get(1).asIntegerValue().asInt());
-        
+
         return builder.build();
     }
 }
