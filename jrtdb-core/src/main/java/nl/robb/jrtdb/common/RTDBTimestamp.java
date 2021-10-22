@@ -1,4 +1,4 @@
-package nl.robb.jrtdb.db;
+package nl.robb.jrtdb.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
@@ -7,7 +7,7 @@ import java.time.Instant;
  *
  * @author rob
  */
-class RTDBTimestamp {
+public class RTDBTimestamp {
 
     private final int tv_sec;
     private final int tv_usec;
@@ -35,11 +35,11 @@ class RTDBTimestamp {
         return tv_sec + tv_usec * 1e-6;
     }
 
-    int getTvSec() {
+    public int getTvSec() {
         return tv_sec;
     }
 
-    int getTvUSec() {
+    public int getTvUSec() {
         return tv_usec;
     }
 

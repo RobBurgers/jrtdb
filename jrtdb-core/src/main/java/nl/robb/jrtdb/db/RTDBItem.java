@@ -1,5 +1,6 @@
 package nl.robb.jrtdb.db;
 
+import nl.robb.jrtdb.common.RTDBTimestamp;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
