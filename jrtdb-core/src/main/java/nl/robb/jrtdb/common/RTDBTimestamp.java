@@ -1,5 +1,6 @@
 package nl.robb.jrtdb.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 
@@ -31,6 +32,7 @@ public class RTDBTimestamp {
         this.tv_usec = tv_usec;
     }
 
+    @JsonIgnore
     public double getTimestamp() {
         return tv_sec + tv_usec * 1e-6;
     }
