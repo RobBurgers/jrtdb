@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import nl.robb.jrtdb.common.InvalidDataException;
@@ -19,20 +20,26 @@ import nl.robb.jrtdb.msg.RTDBv2InputStream;
  * @author rob
  */
 public class RTDBMessageReceiver implements Runnable {
-    
+
     private static final Logger LOG = Logger.getLogger(RTDBMessageReceiver.class.getName());
     private static final int MAXPACKETSIZE = 4096;
 
     private final RTDBContext ctx;
     private final RTDBMessageHandler handler;
+    private final CountDownLatch runningSignal;
     private MulticastSocket multicastSocket;
     private volatile boolean isStopped = false;
-    
+
     public RTDBMessageReceiver(RTDBContext ctx, RTDBMessageHandler handler) {
+        this (ctx, handler, new CountDownLatch(1));
+    }
+
+    public RTDBMessageReceiver(RTDBContext ctx, RTDBMessageHandler handler, CountDownLatch runningSignal) {
         this.ctx = ctx;
         this.handler = handler;
+        this.runningSignal = runningSignal;
     }
-    
+
     @Override
     public void run() {
         LOG.info("Waiting for connection");
@@ -42,6 +49,8 @@ public class RTDBMessageReceiver implements Runnable {
             SocketAddress sa = new InetSocketAddress(address, ctx.getPort());
             NetworkInterface ni = NetworkInterface.getByName(ctx.getIfName());
             multicastSocket.joinGroup(sa, ni);
+
+            runningSignal.countDown();
 
             while (!isStopped) {
                 // Wait for a packet

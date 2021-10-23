@@ -5,12 +5,13 @@ import java.io.ByteArrayOutputStream;
 import nl.robb.jrtdb.common.InvalidDataException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import nl.robb.jrtdb.comm.RTDBContext;
+import nl.robb.jrtdb.comm.RTDBMessageReceiver;
+import nl.robb.jrtdb.comm.RTDBMessageSender;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -20,13 +21,48 @@ import org.junit.Test;
 public class RTDBv2IOStreamTest {
 
     @Test
-    public void testSendData() throws InvalidDataException, IOException {
-        byte[] dataIn = readFile("src/test/resources/rtdb-00.bin");
-        byte [] IP = { 127, 0, 0, 1 };
-        InetAddress address = InetAddress.getByAddress(IP);
-        DatagramPacket packet = new DatagramPacket(dataIn, dataIn.length, address, 8001);
-        DatagramSocket datagramSocket = new DatagramSocket();
-        datagramSocket.send(packet);
+    public void testSendReceiveData() throws InvalidDataException, IOException, InterruptedException {
+        RTDBv2DSFile ds = new RTDBv2DSFile("src/test/resources/rtdb-00.bin");
+        Collection<RTDBv2DTO> expected = ds.getAll();
+        // confirm that the input is not empty
+        Assert.assertTrue(expected.size() > 0);
+
+        // Set up receiver and sender
+        final CountDownLatch running = new CountDownLatch(1);
+        final CountDownLatch done = new CountDownLatch(1);
+        RTDBContext ctx = new RTDBContext.Builder()
+                .withIPv4Address(new byte[] { (byte)224,(byte)16,(byte)32,(byte)201 })
+                .withInterface("lo")
+                .withPort(6754)
+                .build();
+        RTDBMessageReceiver receiver = new RTDBMessageReceiver(ctx, (Collection<RTDBv2DTO> actual) -> {
+            Assert.assertEquals(expected.toString(), actual.toString());
+            // Countdown does not triggered when assert fails. Timeout occurs.
+            done.countDown();
+        }, running);
+        RTDBMessageSender sender = new RTDBMessageSender(1, ctx, ds);
+
+        Thread t = new Thread(receiver);
+        t.start();
+
+        // Wait for receiver to start
+        if (!running.await(5, TimeUnit.SECONDS)) {
+            Assert.fail("Receiver took too long to start");
+        }
+
+        // Now it is time to send the data accross
+        sender.send();
+
+        // Wait for reception of data
+        if (!done.await(5, TimeUnit.SECONDS)) {
+            Assert.fail("Receiver timeout out. No message received.");
+        }
+
+        sender.stop();
+        receiver.stop();
+
+        t.join(5000);
+        Assert.assertFalse("Receiver thread failed to die", t.isAlive());
     }
 
     @Test
