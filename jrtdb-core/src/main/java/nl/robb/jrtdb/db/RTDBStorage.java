@@ -87,7 +87,7 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO>  {
     }
 
     private RTDBItem toRTDBItem(RTDBv2DTO data) {
-        RTDBTimestamp ts = new RTDBTimestamp(data.getInstant());
+        RTDBTimestamp ts = RTDBTimestamp.from(data.getInstant());
         return new RTDBItem(data.getData(), ts, data.isShared(), data.isList());
     }
 }

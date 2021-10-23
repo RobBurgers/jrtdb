@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.luben.zstd.Zstd;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.Instant;
 import nl.robb.jrtdb.common.RTDBTimestamp;
 import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -51,7 +50,7 @@ public class RTDBv2OutputStream extends OutputStream {
         byte[] message = new byte[4096];
         // write header to message
         RTDBv2Header header = new RTDBv2Header(
-                agentId, counter++, new RTDBTimestamp(Instant.now()));
+                agentId, counter++, RTDBTimestamp.now());
         byte[] packedHeader = mapper.writeValueAsBytes(header);
 
         message[0] = (byte)packedHeader.length;
