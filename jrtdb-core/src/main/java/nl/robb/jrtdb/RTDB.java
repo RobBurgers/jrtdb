@@ -73,7 +73,8 @@ public class RTDB {
     public <T> RTDBStatus put(String key, T t) {
         try {
             byte[] serialized = objectMapper.writeValueAsBytes(t);
-            RTDBv2DTO dto = new RTDBv2DTO.RtDBv2DTOBuilder(1, key, serialized) // TODO: Agent id
+            RTDBv2DTO dto = new RTDBv2DTO.RtDBv2DTOBuilder(
+                    source.getAgentId(), key, serialized)
                     .build();
             source.put(key, dto);
             return RTDBStatus.SUCCESS;

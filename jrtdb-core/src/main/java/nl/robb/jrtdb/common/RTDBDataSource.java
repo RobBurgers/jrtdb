@@ -12,6 +12,18 @@ import java.util.Collection;
 public interface RTDBDataSource<T> extends Closeable {
 
     /**
+     * Returns id of the agent that this data belongs to. Must be
+     * provided when data source is writable.
+     * @return agent id
+     */
+    default int getAgentId() {
+        if (isWrite()) {
+            throw new UnsupportedOperationException("Must override method for writable data source.");
+        }
+        return 0;
+    }
+
+    /**
      * Returns whether this data store supports reading of data
      * @return true when data this data store supports reading, false otherwise
      */

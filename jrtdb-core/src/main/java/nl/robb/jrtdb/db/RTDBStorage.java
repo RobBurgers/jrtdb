@@ -41,7 +41,17 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO>  {
     }
 
     @Override
+    public int getAgentId() {
+        return remoteAgent;
+    }
+
+    @Override
     public boolean isRead() {
+        return true;
+    }
+
+    @Override
+    public boolean isWrite() {
         return true;
     }
 
