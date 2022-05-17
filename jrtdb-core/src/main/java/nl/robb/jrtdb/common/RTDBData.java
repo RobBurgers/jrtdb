@@ -1,8 +1,5 @@
 package nl.robb.jrtdb.common;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 /**
  *
  * @author rob
@@ -12,17 +9,17 @@ public class RTDBData<T> {
 
     private final T data;
     private final RTDBStatus status;
-    private final Instant ts;
+    private final RTDBTimestamp ts;
 
     public RTDBData(RTDBStatus status) {
-        this(status, null, Instant.now());
+        this(status, null, RTDBTimestamp.now());
     }
 
-    public RTDBData(T data, Instant ts) {
+    public RTDBData(T data, RTDBTimestamp ts) {
         this(RTDBStatus.SUCCESS, data, ts);
     }
 
-    public RTDBData(RTDBStatus status, T data, Instant ts) {
+    public RTDBData(RTDBStatus status, T data, RTDBTimestamp ts) {
         this.status = status;
         this.data = data;
         this.ts = ts;
@@ -41,7 +38,7 @@ public class RTDBData<T> {
      * @return
      */
     public long getAge() {
-        return ChronoUnit.MILLIS.between(ts, Instant.now());
+        return RTDBTimestamp.millisBetween(RTDBTimestamp.now(), ts);
     }
 
     /**
@@ -51,4 +48,5 @@ public class RTDBData<T> {
     public RTDBStatus getStatus() {
         return status;
     }
+
 }

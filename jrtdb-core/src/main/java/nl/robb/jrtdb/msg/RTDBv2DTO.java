@@ -1,8 +1,7 @@
 package nl.robb.jrtdb.msg;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import nl.robb.jrtdb.common.HelperMsgpack;
+import nl.robb.jrtdb.common.RTDBTimestamp;
 
 /**
  *
@@ -13,7 +12,7 @@ public class RTDBv2DTO {
     private final int agent;
     private final String key;
     private final byte[] data;
-    private final Instant timestamp;
+    private final RTDBTimestamp timestamp;
     private final boolean isShared;
     private final boolean isList;
 
@@ -41,7 +40,7 @@ public class RTDBv2DTO {
     /**
      * @return the timestamp
      */
-    public Instant getInstant() {
+    public RTDBTimestamp getInstant() {
         return timestamp;
     }
 
@@ -68,12 +67,11 @@ public class RTDBv2DTO {
 
     @Override
     public String toString() {
-        double t = (double)timestamp.getEpochSecond() + (double)timestamp.getNano() * 1e-9f;
-        return String.format("agent=%d; key=%s; data=%s; timestamp=%.6f; shared=%b; list=%b",
-                agent, key, getDataAsString(), t, isShared, isList);
+        return String.format("agent=%d; key=%s; data=%s; timestamp=%s; shared=%b; list=%b",
+                agent, key, getDataAsString(), timestamp, isShared, isList);
     }
 
-    private RTDBv2DTO(int agent, String key, byte[] data, Instant timestamp,
+    private RTDBv2DTO(int agent, String key, byte[] data, RTDBTimestamp timestamp,
             boolean isShared, boolean isList) {
         this.agent = agent;
         this.key = key;
@@ -88,7 +86,7 @@ public class RTDBv2DTO {
         private final int agent;
         private final String key;
         private final byte[] data;
-        private Instant timestamp = Instant.now();
+        private RTDBTimestamp timestamp = RTDBTimestamp.now();
         private boolean isShared;
         private boolean isList;
 
@@ -99,7 +97,7 @@ public class RTDBv2DTO {
         }
 
         public RtDBv2DTOBuilder withTimestamp(int tv_sec, int tv_usec) {
-            timestamp = Instant.EPOCH.plusSeconds(tv_sec).plus(tv_usec, ChronoUnit.MICROS);
+            timestamp = new RTDBTimestamp(tv_sec, tv_usec);
             return this;
         }
 
@@ -107,7 +105,7 @@ public class RTDBv2DTO {
             this.isShared = true;
             return this;
         }
-        
+
         public RtDBv2DTOBuilder isList() {
             this.isList = true;
             return this;

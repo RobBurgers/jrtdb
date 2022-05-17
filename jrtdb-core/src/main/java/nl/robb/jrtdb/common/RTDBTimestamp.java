@@ -2,7 +2,6 @@ package nl.robb.jrtdb.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
 
 /**
  *
@@ -17,12 +16,18 @@ public class RTDBTimestamp {
         return new RTDBTimestamp((int)ts, (int)((ts - ((int)ts)) * 1e6));
     }
 
-    public static RTDBTimestamp from(Instant ts) {
-        return new RTDBTimestamp((int)ts.getEpochSecond(), (int)(ts.getNano()/1000));
+    public static RTDBTimestamp from(long ts) {
+        return new RTDBTimestamp((int)(ts / 1000), (int)((ts % 1000) * 1000));
     }
 
     public static RTDBTimestamp now() {
-        return from(Instant.now());
+        return from(System.currentTimeMillis());
+    }
+
+    public static long millisBetween(RTDBTimestamp t1, RTDBTimestamp t2) {
+        long secDelta = t1.tvSec - t2.tvSec;
+        long usecDelta = t1.tvUsec - t2.tvUsec;
+        return secDelta * 1000 + (usecDelta % 1000) * 1000;
     }
 
     public RTDBTimestamp(

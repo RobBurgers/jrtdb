@@ -43,8 +43,8 @@ public class RTDBv2Msgpack {
 
             // timestamp
             packer.packArrayHeader(2);
-            int tvSec = (int)d.getInstant().getEpochSecond();
-            int tvUSec = (int)(d.getInstant().getNano()/1000);
+            int tvSec = d.getInstant().getTvSec();
+            int tvUSec = d.getInstant().getTvUSec();
             packer.packInt(tvSec);
             packer.packInt(tvUSec);
 

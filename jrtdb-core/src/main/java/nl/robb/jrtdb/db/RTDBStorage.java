@@ -1,6 +1,5 @@
 package nl.robb.jrtdb.db;
 
-import nl.robb.jrtdb.common.RTDBTimestamp;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -97,7 +96,6 @@ public class RTDBStorage implements RTDBDataSource<RTDBv2DTO>  {
     }
 
     private RTDBItem toRTDBItem(RTDBv2DTO data) {
-        RTDBTimestamp ts = RTDBTimestamp.from(data.getInstant());
-        return new RTDBItem(data.getData(), ts, data.isShared(), data.isList());
+        return new RTDBItem(data.getData(), data.getInstant(), data.isShared(), data.isList());
     }
 }
