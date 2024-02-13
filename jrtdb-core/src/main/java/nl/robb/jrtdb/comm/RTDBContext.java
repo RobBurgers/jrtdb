@@ -17,7 +17,7 @@ public class RTDBContext {
         this.ipv4Address = ipv4Address;
         this.port = port;
     }
-    
+
     /**
      * @return the ifName
      */
@@ -39,15 +39,21 @@ public class RTDBContext {
         return port;
     }
 
+    @Override
+    public String toString() {
+        return String.format("interface=%s ip4address=%d.%d.%d.%d port=%d",
+                ifName, ipv4Address[0] & 0xff, ipv4Address[1] & 0xff, ipv4Address[2] & 0xff, ipv4Address[3] & 0xff, port);
+    }
+
     public static class Builder {
-        
+
         private String ifName = "lo";
         private final byte[] ipv4Address = new byte[] { (byte)239, (byte)255, (byte)1, (byte)1 };
         private int port = 21012;
-        
+
         public Builder() {
         }
-        
+
         public Builder withInterface(String ifName) {
             this.ifName = ifName;
             return this;
@@ -74,7 +80,7 @@ public class RTDBContext {
             }
             return this;
         }
-        
+
         public Builder withPort(int port) {
             this.port = port;
             return this;

@@ -42,7 +42,7 @@ public class RTDBMessageReceiver implements Runnable {
 
     @Override
     public void run() {
-        LOG.info("Waiting for connection");
+        LOG.log(Level.INFO, "Waiting for connection: {0}", ctx);
         try {
             multicastSocket = new MulticastSocket(ctx.getPort());
             InetAddress address = InetAddress.getByAddress(ctx.getIpv4Address());
